@@ -4,9 +4,13 @@ Personal [Agent Skills](https://code.claude.com/docs/en/skills) collection. Each
 
 ## Skills
 
+<!-- skills:start -->
 | Skill | Description |
 | --- | --- |
-| [`mise`](./mise) | mise (mise-en-place) 开发工具版本与项目环境管理器：`mise.toml` 里的工具版本、环境变量、任务、backend、`mise.lock`、shims、bootstrap、配置分层、CI/IDE/MCP 集成、从 asdf 迁移。 |
+| [`mise`](./mise) | mise (mise-en-place) 开发工具版本与项目环境管理器。用于在 mise.toml 中声明工具版本 [tools]、环境变量 [env]、任务 [tasks]、变量 [vars]；管理 backend(安装来源)、mise.lock 锁定文件、shims、bootstrap 机器初始化(系统包/仓库/dotfiles/服务/macOS 默认值)、配置分层与 config environments(mise.<env>.toml)、registry 与插件、CI/IDE/MCP/daemons 集成，以及从 asdf/.tool-versions 迁移。当用户提到 mise、mise.toml、mise.lock、mise use/install/run/exec/upgrade/lock/settings/tasks、asdf 迁移、node/python 多版本切换、统一项目环境变量与任务、跨机器复现工具版本时使用。 |
+<!-- skills:end -->
+
+> The table above is generated from each skill's frontmatter by `node scripts/generate-readme.mjs` and verified in CI. Do not edit it by hand.
 
 ## Install
 
@@ -39,6 +43,40 @@ Copy a skill directory (for example `mise/`) into your agent's skills folder:
 ├── SKILL.md          # frontmatter (name, description, allowed-tools) + overview and routing
 └── references/       # detailed topic docs loaded on demand
 ```
+
+`SKILL.md` frontmatter must contain a `name` matching its directory, plus a `description`:
+
+```yaml
+---
+name: mise
+description: What the skill does and when to use it.
+allowed-tools: Read, Bash, Glob, Grep, Edit, Write
+---
+```
+
+## Development
+
+No dependencies required — the tooling is plain Node.js.
+
+```sh
+node scripts/validate-skills.mjs      # check structure, frontmatter, links
+node scripts/generate-readme.mjs      # rewrite the skills table
+node scripts/generate-readme.mjs --check   # fail if the table is stale
+```
+
+### CI
+
+[`.github/workflows/skills.yml`](./.github/workflows/skills.yml) runs on every push and pull request:
+
+- **validate** — `validate-skills.mjs` plus `generate-readme.mjs --check`; a pull request fails if a skill is malformed or the table is stale.
+- **generate** — on pushes to `main`, regenerates the table and commits it back as `github-actions[bot]` if it changed.
+
+## Adding a skill
+
+1. `mkdir my-skill && $EDITOR my-skill/SKILL.md`
+2. Add frontmatter (`name` = directory name) and content; put long-form docs in `my-skill/references/` and link them from `SKILL.md`.
+3. `node scripts/validate-skills.mjs && node scripts/generate-readme.mjs`
+4. Commit and push — CI keeps the table in sync.
 
 ## License
 
