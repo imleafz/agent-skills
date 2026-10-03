@@ -17,7 +17,7 @@ jobs:
     name: Validate structure
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate skills
         run: node scripts/validate-skills.mjs
       - name: Check README skills table is up to date
@@ -31,7 +31,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Regenerate README skills table
         run: node scripts/generate-readme.mjs
       - name: Commit if changed
