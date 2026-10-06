@@ -1,6 +1,6 @@
 # OINK 站点功能参考
 
-来源：https://oink.pgsty.com/zh/docs/customize/（OINK v1.1.0 文档）
+来源：https://oink.pgsty.com/zh/docs/customize/（OINK v1.2.0 文档）
 
 覆盖：本地全文检索、命令面板、键盘导航、多语言、多版本、分类体系、仓库与页面信息、打印、Agent 支持。键名/命令/URL 保持原文。
 
@@ -57,10 +57,10 @@
 | --- | --- | --- |
 | 快速链接 | 顶栏一级菜单选出的入口 | `params.ui.quick_links` |
 | 页面操作 | 复制/查看 Markdown、编辑本页、修改历史、新建子页、提 issue、打印整节 | 仓库配置与本页是否有 Markdown 输出 |
-| 偏好设置 | 切换版本 → 语言 → 主题 | 是否配了多版本/多语言/深浅色菜单 |
+| 偏好设置 | 切换版本 → 语言 → 主题（1.2 另有 `switch_preset` 切换视觉风格，与明暗独立） | 是否配了多版本/多语言/深浅色/风格菜单 |
 | 命令 | 打开 GitHub 仓库，之后是自定义命令 | `github_project_repo`（缺省回退 `github_repo`）与 `ui.command_palette.commands` |
 
-输入文字时先列页面结果，按内容根分组（组名是面包屑第一段，组序跟随顶栏一级菜单），命令与动作合并一组排最后；`>` 只列命令与动作。不可用项在能说明原因时仍列出。
+输入文字时先列页面结果，按内容根分组（组名是面包屑第一段，组序跟随顶栏一级菜单），命令与动作合并一组排最后；`>` 只列命令与动作。不可用项在能说明原因时仍列出。外观入口是顶栏/底栏的太阳/月亮按钮，打开「风格」与「明暗」两组（风格组由 `params.ui.preset_menu` 控制）；`t` 键仍只切明暗，风格切换走 `switch_preset`。
 
 **快速链接**从 Hugo 主菜单按 identifier 选取，不另写清单：`params.ui.quick_links: [docs, blog]`（值是 `menus.main` 条目的 identifier；缺省取 docs/blog 栏目）。
 

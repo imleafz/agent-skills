@@ -1,6 +1,6 @@
 # 图表、媒体与引用组件
 
-来源：https://oink.pgsty.com/zh/docs/components/（OINK v1.1.0 文档）
+来源：https://oink.pgsty.com/zh/docs/components/（OINK v1.2.0 文档）
 
 覆盖公式、图表运行时（Mermaid / PlantUML / Markmap / Draw.io / ECharts / Infographic）、画廊，以及引用类 shortcode（include / param / comment）与 Asciinema 终端录像。
 

@@ -1,6 +1,6 @@
 # OINK 设计与开发（维护者契约）
 
-来源：https://oink.pgsty.com/zh/docs/design/（OINK v1.1.0 文档，面向主题维护者）
+来源：https://oink.pgsty.com/zh/docs/design/（OINK v1.2.0 文档，面向主题维护者）
 
 本文件面向 OINK 主题维护者，记录现行不变量、已接受决策、研究证据与候选提案。面向读者的搭建指南不在这里。
 
@@ -134,8 +134,9 @@ Hugo 的 `images` 是唯一创作 API；`params.images` 只作全站社交卡片
 - 主题输出用 `td-` class、`data-td-*` 属性、`--td-*` 自定义属性；`.steps`、`.cards`、`.full-width` 等作者标记无前缀。
 - 主题拥有的装饰图标带 `aria-hidden`；只有含任务列表或原始 Font Awesome 元素的页面才加载无作者内容无障碍修复。
 - 阅读容器区分指针聚焦与键盘导航：指针聚焦的 main/表格滚动区/代码 `pre` 不会仅因随后按键出现边框；Tab、失焦或新的非指针聚焦清除豁免。滚动容器保留 `tabindex`，跳过导航目标在标题附近显示局部边框。
-- 字体角色 `ui`、`body`、`heading`、`code`、`display`、`meta`、`print`，通过 `--td-*-font-family` 暴露。`ui` 是主字体：`body` 经它解析、`heading` 又经 `body`，赋一次值同时移动界面/正文/标题。`params.ui.typography` 取 `technical` 或 `system`，编译到同一份样式表。`params.ui.fonts` 让配置层触达同一组角色，只写字体族名、绝不加载字体文件（留在网络契约之外），未知角色或不安全值只告警并单独丢弃。
-- 强调色按角色拆分：**强调文字**跟随 Bootstrap 链接族与 `--bs-code-color`（主题色永不重声明）；**强调底**跟随 `--td-accent`/`--td-accent-rgb`/`--td-accent-hover`。`params.ui.theme_color` 唯一注入这些底层。`theme_color`/`theme_color_dark` 取 `#rgb`/`#rrggbb`；解析失败告警并保留默认；解析成功但低于 4.5:1 的颜色带可抑制 id 告警并照常生效（建议性检查）。亮色是主键：无有效 `theme_color` 时 `theme_color_dark` 告警并被忽略；省略暗色一半时向白按 4% 步进提亮至 4.5:1。注入的每个字节都由解析出的整数通道格式化。
+- 字体角色 `ui`、`body`、`heading`、`code`、`display`、`meta`、`brand`、`print`，通过 `--td-*-font-family` 暴露。`ui` 是主字体：`body` 经它解析、`heading` 又经 `body`，赋一次值同时移动界面/正文/标题（除非单独设了 `body`）。`params.ui.typography` 取 `technical` 或 `system`，编译到同一份样式表。`params.ui.fonts` 让配置层触达同一组角色，只写字体族名、绝不加载字体文件（留在网络契约之外），未知角色或不安全值只告警并单独丢弃。字体角色优先级：预设 → `typography: system` → head 输出的 `params.ui.fonts` → 站点 `_styles_project.scss`。
+- 视觉预设：`params.ui.preset` 取 `paper`（1.2 默认）/`slate`/实验 `ink`/`terminal`；保留名 `folio`/`canvas` 与非法值告警回退 `paper`；**不支持页面级预设**。`params.ui.preset_menu`（默认 `false`）控制读者切换，`true` 提供 Paper/Slate/站点默认值，列表显式开实验且必须含站点默认值（缺失告警补入）。Hugo 给所有文档根（含 404 与打印）输出 `data-td-preset` 与 `data-td-site-preset`；开启选择时 head 内联脚本在 CSS 前校验 `td-preset`，选中站点默认项清除存储键，存储禁用时控件仍可用并提示。风格事件 `td-preset-change`（`{preset, previous, stored}`），明暗独立用 `data-bs-theme`/`td-color-theme`/`td-theme-change`。四套预设编入同一份样式表，Slate 保留 v1.1.0 色板。Giscus 色板跟随风格+明暗，打印用当前预设浅色白底，Mermaid/ECharts 只跟随明暗，API 组件保留供应商色板。
+- 强调色按角色拆分：**强调文字**跟随 Bootstrap 链接族与 `--bs-code-color`（主题色永不重声明）；行内代码随预设变化（Slate 胭脂红对，Paper 墨色文字+淡底）。**强调底**跟随 `--td-accent`/`--td-accent-rgb`/`--td-accent-hover`。`params.ui.theme_color` 唯一注入这些底层。`theme_color`/`theme_color_dark` 取 `#rgb`/`#rrggbb`；解析失败告警并保留默认；解析成功但低于 4.5:1 的颜色带可抑制 id 告警并照常生效（建议性检查）。亮色是主键：无有效 `theme_color` 时 `theme_color_dark` 告警并被忽略；省略暗色一半时向白按 4% 步进提亮至 4.5:1。注入的每个字节都由解析出的整数通道格式化。
 
 ## 发布状态
 
@@ -242,7 +243,7 @@ OINK 没有 article 类型。沉浸式阅读由四个独立键组成（可设页
 ### 搜索、操作与运行时
 
 - `params.offline_search` 选择启用各语言本地索引；启用后默认也在 `hugo server` 期间构建，大型编辑循环可设 `offline_search_on_serve: false`。夹具预算原始 2 MiB、gzip 512 KiB。
-- 内置操作 ID：`copy_markdown`、`copy_link`、`open_chatgpt`、`open_claude`、`view_markdown`、`view_history`、`edit_page`、`create_child_page`、`create_issue`、`create_project_issue`、`print_section`、`print`、`switch_theme`、`switch_language`、`switch_version`、`open_github`。站点命令只能打开安全 URL 或调用内置 ID，**绝不能注入 JavaScript**。
+- 内置操作 ID：`copy_markdown`、`copy_link`、`open_chatgpt`、`open_claude`、`view_markdown`、`view_history`、`edit_page`、`create_child_page`、`create_issue`、`create_project_issue`、`print_section`、`print`、`switch_preset`（1.2 新增，独立于 `switch_theme`）、`switch_theme`、`switch_language`、`switch_version`、`open_github`。站点命令只能打开安全 URL 或调用内置 ID，**绝不能注入 JavaScript**。
 - 命令面板有空状态/文本搜索/`>` 命令状态；无历史、无语义搜索、无个性化、无远程回退。查询留在浏览器内，默认不发遥测。
 - 键盘：`/`、`\`、`f`、`c` 打开搜索或命令；`j`/`k` 移动标题；`q`/`e` 翻页；`h` 改变展示；`l`/`y`、`t`、`r` 打开语言/主题/根栏目。从子页按 Left/`a` 先聚焦父分组再按一次折叠；Right/`d` 展开或进入第一个可见子项；上一页/下一页只遍历链接。
 - `params.ui.scroll_spy` 与页面键 `scroll_spy` 在整个 1.x 期间是**静默兼容 no-op**，不加载独立运行时，只有未来破坏性版本才删除。
@@ -281,9 +282,11 @@ OINK 没有 article 类型。沉浸式阅读由四个独立键组成（可设页
 - 叙述文件按语言拆分：依次解析 `<field>_<exact language>`（`-` 规范为 `_`）→ `<field>_<primary language>` → 无后缀。不接受 camelCase 别名。
 - 输出：HTML 完整静态区块+渐进增强；Print 静态网格与内容、移除控件；Markdown 无主题 class 的标题/正文/列表/表格/代码；RSS 省略落地页区块。
 
-## 迁移边界：OINK 0.4 → 1.1.0
+## 迁移边界：OINK 0.4 → 1.2.0
 
-这是源码与配置指南，不是版本发布流水账。工具 `bin/migrations/oink06.py` **只扫描/自动改写站点内容目录下的 Markdown 文件**（含受支持 YAML front matter），不改配置、数据、布局、资源、模块或生成输出；TOML/JSON front matter 与有歧义的 Markdown 会连位置一起报告，留人工检查。
+> 本契约描述 v1.2.0 的正式行为；唯一中英文契约源在主题仓库 `content/docs/design/`。1.2.0 除默认外观变 Paper 外不改内容源码。
+
+这是源码与配置指南，不是版本发布流水账。工具 `bin/migrations/oink06.py` **只扫描/自动改写站点内容目录下的 Markdown 文件**（含受支持 YAML front matter），不改配置、数据、布局、资源、模块或生成输出；TOML/JSON front matter 与有歧义的 Markdown 会连位置一起报告，留人工检查。1.2.0 起保留列表与引用块中嵌套的围栏示例（包括示例里字面的引用与围栏标记）。批量升级既有站点固定的模块版本用 `bin/update-consumers.py`（随 1.2.0 发布，见 `admin.md`）。
 
 ```sh
 python3 bin/migrations/oink06.py report --sites <dir>... --md report.md --json report.json
@@ -377,6 +380,7 @@ Prism、`rss_sections`、`algolia_docsearch` 已移除；**Chroma 是唯一高�
 | 配置模型 | 延长 Hugo/Docsy 兼容面，不另造 `params.oink.*` 或全局 resolver |
 | Markdown 优先创作 | 原生 Markdown 优先，shortcode 只补真实能力缺口；沿一条系统延长 |
 | 生成式配置 Schema | 只读投影，CI 漂移门禁阻止第三个配置权威 |
+| 视觉预设（1.2） | Paper 成默认、Slate 保留旧外观、外观菜单分离风格与明暗；Ink/Terminal 显式实验。归属 `check-presets.py`（token 对称、AA 色板、冻结的 Slate v1.1.0 色板）+ 文档站 `appearance.spec.mjs` |
 
 Markdown 优先创作的输出契约：只有在每种已启用输出（HTML/Print/Markdown+LLMS/RSS）都得到明确语义结果，一种创作形态才算完整——避免漂亮的 HTML-only 组件破坏 Agent 输出、订阅源或整书打印。提议新组件时，必须先说明 Markdown + 既有渲染钩子为什么不够。原生形态背后的 Goldmark 事实记录在块属性研究。
 
@@ -391,6 +395,9 @@ Markdown 优先创作的输出契约：只有在每种已启用输出（HTML/Pri
 - **2026-08-26 全面审查**：4 P1 / 9 P2 / 5 P3。共同原因：已有原则很强，但早期/边缘实现未接入，门禁只证明正向场景不回归。P1 含 Swagger 隐式在线 validator、非法配置击穿普通预览、OpenAPI/Asciinema HTML-only 岛、Landing 未验证数据进 `safeCSS`。**F01–F06 已由 0.7.1 修复**，发现应读作促成修复的证据；路线分阶段 0/1/2。
 - **2026-09-19 社区调研**：PR 43 = `sidebar_root_menu: false` 过滤遗漏；#41 = 隐藏侧栏仍可聚焦 + 缺公开 API；#44 = 指针聚焦后按键出现边框（机制符合预期，只改进焦点样式）；#42 = 隐藏与分组选项区别；#40 = 搜索尾部扩展（受限 API 需求）。均已实现并接受契约。
 - **2026-09-20 发布准备审查**：复现修复五项 P2 运行时缺陷（`08f6563`）：侧栏就绪早于活动路径补全、待完成操作可进入原生选择菜单、右侧 TOC 整栏折叠后仍可聚焦、方向键跳过无链接分组、抽屉焦点循环计入 inert 后代。验证快照：JS 单测 44、站点 `make check` 57、`make browser` 149（八组 Chromium）。**v1.1.0 已于 2026-09-20 从提交 `3a18234` 发布**，模块校验和 `h1:121L5g57ChRCPyidzEBBcln2Co+0zYRQ+XDDXjymd0Q=`。
+- **2026-10-05 视觉预设验收**：`check-presets.py` 覆盖三类背景的正文/链接/强调色 AA、浅深 token 对称、建议性背景亮度与**冻结的 Slate v1.1.0 基础色板**；七次严格构建、28 个文档根元素。文档站 `appearance.spec.mjs` 检查真实输出（含 404 与打印）。Paper/Slate 用真实主题输出截图评审；10 月 4 日注入样式的截图是研究原型，与 10 月 5 日真实输出分开看待。
+- **2026-10-05 Ink/Terminal 实验**：在真实主题输出中提供显式实验预设（直角/2px 圆角、紧凑桌面导航），复用现有本地字体、状态管理与无障碍控件；图表与 API 组件仍只随明暗变化。仍未晋升为稳定默认选项。
+- **v1.2.0 发布**：2026-10-05 从 `main` 发布（GitHub Releases `v1.2.0`），带来 Paper 默认、四套风格、独立风格/明暗外观菜单、本地 IBM Plex Sans、搜索/导航/SEO 修正与更受保护的出版维护工具。文档站与 CLI 文档仍分别固定各自的已发布基线。
 
 ## 候选提案（摘要）
 

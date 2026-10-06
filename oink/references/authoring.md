@@ -1,6 +1,6 @@
 # 创作内容：页面、书籍、博客、发布与 API
 
-来源：<https://oink.pgsty.com/zh/docs/write/>（OINK v1.1.0 文档）
+来源：<https://oink.pgsty.com/zh/docs/write/>（OINK v1.2.0 文档）
 
 ## 一页文档的构成
 

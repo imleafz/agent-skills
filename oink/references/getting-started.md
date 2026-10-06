@@ -1,6 +1,6 @@
 # 安装、Starter 与建站方式
 
-来源：<https://oink.pgsty.com/zh/docs/start/>（OINK v1.1.0 文档）
+来源：<https://oink.pgsty.com/zh/docs/start/>（OINK v1.2.0 文档）
 
 ## 依赖
 
@@ -101,7 +101,7 @@ module:
 hugo new site --format yaml my-docs
 cd my-docs
 hugo mod init github.com/example/my-docs      # 通常就是仓库地址
-hugo mod get github.com/pgsty/oink@v1.1.0     # 写出 go.mod / go.sum，都要提交
+hugo mod get github.com/pgsty/oink@v1.2.0     # 写出 go.mod / go.sum，都要提交
 ```
 
 生产固定到发布标签，不要跟随 `main`；`@latest` 是一次性解析动作，不是版本策略。
@@ -213,20 +213,20 @@ weight: 10
 
 ```bash
 # Hugo Module
-hugo mod get github.com/pgsty/oink@v1.1.0
+hugo mod get github.com/pgsty/oink@v1.2.0
 
 # Git submodule
 git submodule add https://github.com/pgsty/oink.git themes/oink
-git -C themes/oink fetch --tags && git -C themes/oink checkout v1.1.0
+git -C themes/oink fetch --tags && git -C themes/oink checkout v1.2.0
 # CI 运行 Hugo 前：git submodule update --init --recursive
 
 # 离线归档：联网侧 hugo mod vendor 生成 _vendor/ 后整体搬入；或解压 tag 归档
 hugo mod vendor
-tar xzf oink-v1.1.0.tar.gz -C themes/oink --strip-components=1
+tar xzf oink-v1.2.0.tar.gz -C themes/oink --strip-components=1
 
 # 固定版本克隆
 git clone https://github.com/pgsty/oink.git themes/oink
-git -C themes/oink checkout v1.1.0
+git -C themes/oink checkout v1.2.0
 ```
 
 离线分发必须保留 `LICENSE`、`NOTICE` 与 `VENDOR.json`（记录每个第三方运行时的版本、来源、许可证路径与 SHA-256）。
@@ -250,3 +250,7 @@ git status --short                            # 只应有源码修改，无 publ
 ```
 
 再确认：`/docs/` 打得开且侧栏有页面；顶栏搜索搜得到标题；深浅色切换后代码块配色跟随；`go.mod`/`go.sum` 在版本控制中。
+
+## 可选的 OINK CLI（独立项目）
+
+`oink` 是面向站点维护者的独立 Go 可执行文件，把创建站点、环境诊断、产物检查、本地预览与主题升级放在一个入口。**它不随主题发布，普通 Hugo 构建不依赖它**；截至 v1.2.0 仍是 `0.1.0-dev` 本地候选，没有公开安装入口，命令接口仍可能调整（见 `/zh/docs/start/cli/` 与 `/zh/docs/cli/`）。主要命令：`oink init`（从内嵌固定 Starter 快照建站，校验通过才写文件）、`oink doctor`（只读诊断实际解析的主题版本与工具链）、`oink check`（隔离副本中 `--panicOnWarning` 构建后核对链接/锚点/资源/机器输出）、`oink dev`、`oink build`、`oink upgrade --to <标签>`（默认只出计划，`--write` 才改模块文件），另有 `new`/`move`/`plans`/`inspect`/`impact`/`translations` 等内容与影响分析命令。默认离线，只有显式 `--network` 才联网；`--json` 输出 `oink.result/v1`，退出码 `0`=通过、`1`=检查发现问题、`2`=工作未完成。

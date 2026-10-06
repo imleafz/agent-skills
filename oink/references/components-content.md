@@ -1,6 +1,6 @@
 # 内容类组件
 
-来源：https://oink.pgsty.com/zh/docs/components/（OINK v1.1.0 文档）
+来源：https://oink.pgsty.com/zh/docs/components/（OINK v1.2.0 文档）
 
 覆盖：callout、image、code、tabs、table、fields、steps、cards、filetree、badge、kbd。
 

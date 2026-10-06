@@ -1,6 +1,6 @@
 # 定制站点：配置 · 品牌 · 首页 · 导航 · 布局
 
-来源：https://oink.pgsty.com/zh/docs/customize/（OINK v1.1.0 文档）
+来源：https://oink.pgsty.com/zh/docs/customize/（OINK v1.2.0 文档）
 
 站点级配置：`hugo.yml` 参数、`data/` 数据文件、`assets/` 样式入口。页面级 front matter 见创作内容栏目。
 
@@ -222,14 +222,18 @@ favicon 无参数，按约定名扫描 `static/`（`favicon.ico` `favicon.svg` `
 | `params.ui.keyboard_nav` | boolean | true | 单键导航（WASD/方向键走树、j/k 跳标题、q/e 翻页、面板与外壳开关）；`false` 后运行时不进包 |
 | `params.ui.image_zoom` | boolean | false | 允许正文图片点击放大；页面用 front matter `image_zoom` 覆盖 |
 
-### 字体排版 {#typography}
+### 字体排版（含视觉预设） {#typography}
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `params.ui.typography` | enum | technical | `technical` 用主题自带的 Inter / Chakra Petch / IBM Plex Mono；`system` 只用平台字体栈 |
-| `params.ui.fonts` | map | | 为 `ui` `body` `heading` `code` `display` `meta` `print` 七个角色指定字体族；主题校验名称但不加载字体文件 |
+| `params.ui.preset` | enum | paper | 站点级视觉预设：`paper`、`slate`，或显式启用的实验 `ink`、`terminal`。1.2.0 新增；选 `slate` 保留 1.1 旧外观。保留名 `folio`/`canvas` 与非法值告警回退 `paper`，**不支持页面/栏目覆盖** |
+| `params.ui.preset_menu` | boolean 或列表 | false | `true` 提供 Paper、Slate 与站点默认值；列表显式开实验且必须包含站点默认值；与 `dark_mode` 独立 |
+| `params.ui.typography` | enum | technical | `technical` 用所选预设的本地字体（Paper：Plex Sans；Slate：Inter）；`system` 只用平台字体栈，不请求品牌字体。非法值告警回退 |
+| `params.ui.fonts` | map | | 为 `ui` `body` `heading` `code` `display` `meta` `brand` `print` 八个角色指定字体族；主题校验名称但不加载字体文件，每份列表以通用字体族收尾 |
 | `params.page_width` | enum | normal | 外壳整体宽度：`normal` `wide` `full`，可逐页覆盖 |
 | `params.reading_width` | enum | normal | Book 页正文阅读行宽：`slim` `normal` `wide`，不影响外壳 |
+
+读者系统已有字体、或站点已用 `@font-face` 声明时，直接写 `params.ui.fonts`；随站点分发字体文件或更底层排版调整走 SCSS/CSS。
 
 ### 评论与反馈 {#comments-feedback}
 
@@ -391,6 +395,32 @@ hugo --printPathWarnings --panicOnWarning
 
 改动文件：`hugo.yml`、`static/` 图标、`assets/scss/_variables_project.scss`、`assets/scss/_styles_project.scss`。**不要改主题目录**（Hugo Module 升级时整体替换）。
 
+### 视觉预设与外观切换 {#visual-presets}
+
+OINK 1.2.0 默认使用 **Paper**：暖纸色背景、墨色正文、蓝色链接、Plex Sans、标题尾随细线与外框表格。**Slate** 保留 OINK 原有冷灰蓝外观。两者是稳定选项；**Ink**（黑白红、粗线、方形卡片）与 **Terminal**（等宽标题/控件、青绿链接、琥珀强调）是显式启用的实验。升级时如需保留旧外观，设置 `params.ui.preset: slate`。四套预设共用同一份样式表，字体本地加载。
+
+开启读者选择（**外观菜单**：点击太阳/月亮按钮打开，含独立「风格」与「明暗」两组）：设置 `preset_menu` 提供风格切换，切换后尽量保持当前阅读位置。
+
+```yaml {title="hugo.yml"}
+params:
+  ui:
+    preset: paper
+    preset_menu: true          # 提供 Paper、Slate 与站点默认值；不会自动开启实验
+    dark_mode: true            # 独立控制深浅色；只想要控件可写 { show_menu: true }
+```
+
+```yaml {title="hugo.yml"}   # 显式开启实验风格
+params:
+  ui:
+    preset: paper
+    preset_menu: [paper, slate, ink, terminal]   # 列表必须包含站点默认值
+    dark_mode: true
+```
+
+- `preset` 决定站点默认；`preset_menu: false`（默认）不渲染风格组。`preset_menu: true` 只提供 Paper/Slate/站点默认；显式列表才开放实验，也可直接把 `preset` 设为 `ink`/`terminal`。风格与明暗**分别存储**；选中站点默认项会清除个人风格覆盖。
+- Hugo 给所有文档根输出 `data-td-preset` 与 `data-td-site-preset`（含 404 与打印）；开启读者选择时 head 内联脚本在 CSS 前校验 `localStorage['td-preset']`，存储禁用时控件仍可用并提示无法持久化。
+- 只使用 `[data-bs-theme='dark']` 的站点自定义深色规则优先级低于 Paper 深色色板；可保留 Slate，或改用 `[data-td-preset='paper'][data-bs-theme='dark']` 限定。字体配置与分区 `theme_color` 在所有预设下继续优先；打印始终浅色白底。
+
 ### 站名 {#site-title}
 
 ```yaml {title="hugo.yml"}
@@ -477,7 +507,7 @@ params:
     dark_mode: true
 ```
 
-开启后顶栏出现主题控件：点击在浅/深色切换，悬停或键盘聚焦展开「跟随系统/浅色/深色」。选择存本地，无选择时跟随 `prefers-color-scheme`；切换脚本在首屏绘制前设好 `data-bs-theme`，无闪烁。只要调色板写 `{ show_menu: false, enable: true }`；`false`（默认）两者都不启用。
+顶栏出现主题控件：点击太阳/月亮打开**外观菜单**，其中「明暗」组提供亮色/暗色/跟随系统（风格组由 `params.ui.preset_menu` 独立控制）。选择存本地，无选择时跟随 `prefers-color-scheme`；切换脚本在首屏绘制前设好 `data-bs-theme`，无闪烁。只想要调色板不想要控件写 `{ show_menu: false, enable: true }`；`false`（默认）两者都不启用。`t` 快捷键仍直接切明暗；风格切换是命令面板里的独立选项（`switch_preset`）。
 
 ### 字体 {#fonts}
 
@@ -487,12 +517,12 @@ params:
     typography: technical # technical | system
 ```
 
-- `technical`（默认）：界面与正文用 Inter（可变字重，中文与 emoji 落到平台字体），标题装饰用 Chakra Petch，代码用 IBM Plex Mono。字体本地分发，不请求 Google Fonts。
-- `system`：全部回到平台字体栈。
+- `technical`（默认）：使用所选预设的本地字体。Paper 的界面/正文/展示标题用 IBM Plex Sans（1.2 新增的可变字体）；Slate 的界面/正文用 Inter、展示标题用 Chakra Petch。两者字标都用 Chakra Petch，代码都用 IBM Plex Mono，中文与 emoji 落到平台字体。四款字体全部本地分发（Inter / IBM Plex Sans / Chakra Petch / IBM Plex Mono），不请求 Google Fonts。
+- `system`：全部回到平台字体栈，不请求品牌字体。
 
-选中的值写入 `<html data-td-typography="…">`。非法取值告警回落 `technical`。
+选中的值写入 `<html data-td-typography="…">`。非法取值告警回落 `technical`。字体角色优先级：预设 → `typography: system` → head 输出的 `params.ui.fonts` → 站点 `_styles_project.scss`。
 
-七个字体角色：
+八个字体角色（`brand` 在 1.2 加入）：
 
 | 属性 | 配置键 | 用在哪 |
 | --- | --- | --- |
@@ -500,11 +530,12 @@ params:
 | `--td-body-font-family` | `body` | 正文与博客 |
 | `--td-heading-font-family` | `heading` | 正文标题 |
 | `--td-code-font-family` | `code` | 代码与终端 |
-| `--td-display-font-family` | `display` | 字标与展示型大标题 |
+| `--td-display-font-family` | `display` | 展示型大标题 |
 | `--td-meta-font-family` | `meta` | 技术标签与元数据 |
+| `--td-brand-font-family` | `brand` | 字标 |
 | `--td-print-font-family` | `print` | 打印正文 |
 
-`ui` 是主字体：`body` 经它解析、`heading` 又经 `body` 解析，只写 `ui` 一行即可一起换。配置里只写字体族名，不加载字体文件；每个列表以通用族收尾：
+`ui` 是主字体：`body` 经它解析、`heading` 又经 `body` 解析，只写 `ui` 一行即可一起换（除非单独设了 `body`）。配置里只写字体族名，不加载字体文件；每个列表以通用族收尾：
 
 ```yaml {title="hugo.yml"}
 params:
@@ -542,7 +573,7 @@ params:
 | `_variables_project_after_bs.scss` | 设置依赖 Bootstrap 已有定义的变量或 map |
 | `_styles_project.scss` | 在主题组件样式之后写选择器与 CSS 自定义属性 |
 
-编译顺序：Bootstrap 函数 → 项目变量 → OINK 默认值与 Bootstrap → Bootstrap 之后的项目变量 → OINK 组件与品牌层 → 项目样式。七个字体角色与 `--td-brand-*` 是公开接口；`--td-shell-*` 一类是实现细节。
+编译顺序：Bootstrap 函数 → 项目变量 → OINK 默认值与 Bootstrap → Bootstrap 之后的项目变量 → OINK 组件与品牌层 → 项目样式。八个字体角色与 `--td-brand-*` 是公开接口；`--td-shell-*` 一类是实现细节。
 
 **不该做**：改主题目录文件、单独 `@import` 主题内部 partial、为改颜色覆盖 `baseof.html`、引用远程样式表或字体 CDN。额外第三方 CSS 用 `layouts/_partials/hooks/head-end.html` 钩子。
 

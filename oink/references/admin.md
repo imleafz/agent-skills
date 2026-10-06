@@ -1,6 +1,6 @@
 # 维护管理与发布排错
 
-来源：https://oink.pgsty.com/zh/docs/admin/（OINK v1.1.0 文档）
+来源：https://oink.pgsty.com/zh/docs/admin/（OINK v1.2.0 文档）
 
 站点写完之后的运维：本地预览、生产构建、发布上线、评论、分析与 SEO、版本升级、排错。前提 Hugo Extended ≥ 0.160.1，Hugo Module 方式还需 Go。OINK 消费端构建**不依赖** Node.js / npm / PostCSS；日志出现这些步骤说明混进了 Docsy 流程。任务索引：看改动→`hugo server`；出产物→严格生产构建；上线→托管商 + `baseURL`；留言→giscus；统计→分析钩子；收录→`enableRobotsTXT` + `description`；升级/迁移→版本升级 + 迁移工具；故障→排错表。
 
@@ -331,12 +331,12 @@ grep -rl 'googletagmanager\|gtag(' public/ | head   # 没接分析时不应有�
 升级 OINK 是换一个固定模块版本，再确认站点仍能零告警构建；升级会改变渲染结果，先建升级分支再动手。升级前先读目标版本发布注记：本站项目博客 release 系列、GitHub [Releases](https://github.com/pgsty/oink/releases)。生产站点固定已发布标签或主动选定的不可变 commit，不跟随分支，也不用 `@latest`：
 
 ```bash
-hugo mod get github.com/pgsty/oink@v1.1.0   # 已发布的版本标签
+hugo mod get github.com/pgsty/oink@v1.2.0   # 已发布的版本标签
 hugo mod tidy
 hugo mod graph | grep github.com/pgsty/oink
 ```
 
-`go.mod` 应含 `require github.com/pgsty/oink v1.1.0`（`go 1.27.0`）。主动选定的不可变 commit 通常记录为 Go 伪版本，只要解析到预期提交就是有效固定，但不能作为某命名版本已发布的证据。Git submodule 方式先确认无本地修改，再 `git -C themes/oink fetch origin --tags`、`git -C themes/oink checkout --detach v1.1.0`、`git add themes/oink`；离线归档/克隆用选定版本完整内容替换 `themes/oink/`，确认 `theme:` 与目录名一致。
+`go.mod` 应含 `require github.com/pgsty/oink v1.2.0`（`go 1.27.0`）。主动选定的不可变 commit 通常记录为 Go 伪版本，只要解析到预期提交就是有效固定，但不能作为某命名版本已发布的证据。Git submodule 方式先确认无本地修改，再 `git -C themes/oink fetch origin --tags`、`git -C themes/oink checkout --detach v1.2.0`、`git add themes/oink`；离线归档/克隆用选定版本完整内容替换 `themes/oink/`，确认 `theme:` 与目录名一致。
 
 > `make dev` 和 `make check` 只对当前命令设置 `HUGO_MODULE_REPLACEMENTS`，使用同级 checkout；判定发布标签是否可用时用不带替换的 `make build`，否则验证的是本地代码。
 
@@ -365,6 +365,30 @@ hugo --gc --minify --printPathWarnings --panicOnWarning --logLevel info
 | Print 与 Redoc | 检查单页和 Book 聚合 Print、标题与标签页链接，以及真实部署前缀下的本地 Redoc 规范；本地规范路径相对于 `static/` |
 
 `params.ui.image_zoom` 与 `params.offline_search` 仍默认关闭；新搜索钩子不启用远程服务也不加查询遥测；`params.ui.scroll_spy` 与页面级 `scroll_spy` 在 1.x 中仍作为 no-op 接受。将受影响的站点级主题副本与新实现比较后再更新或移除，保留旧图片缩放脚本或侧栏 partial 会让站点无法获得上游修复。验证本地修改用 `make check` / `make browser` / `make dev`；验收正式版本时固定已发布标签、无模块替换构建并验证部署后的页面。
+
+## 从 1.1 升级到 1.2 {#preparing-1-2}
+
+> **默认外观变化**：OINK 1.2.0 默认改为 Paper。需要保留原有外观的站点，在采用此改动前设 `params.ui.preset: slate`；`preset_menu: true` 开启读者切换（默认仍 `false`）。Ink 与 Terminal 需显式设置预设或菜单列表，按钮不显示实验标记。自定义深色品牌选择器的兼容处理见 `site-configuration.md` 的视觉预设。
+
+1.2.0 除默认外观变化外，**无需迁移内容源码**；Hugo Extended 下限仍为 0.160.1。更新模块后逐项验收：
+
+- 检查所选预设、明暗图标、键盘与手机菜单、保存的偏好，以及自定义字体和强调色覆盖。太阳=亮色、月亮=暗色；切换风格不得改变保存的明暗偏好。
+- 复查显式导航、隐藏子树、页面链接、博客分页 canonical，以及缺少译文页面的 SEO 备用链接（1.2 起 `hreflang` 只列真实译文，不再把语言回退的目标语言首页标成译文）。从第 2 页起归档页省略语言备用链接。
+- 检查仅关键词命中的 CJK 搜索摘要、带字面百分号的小节链接；复查 Windows 路径或外部挂载内容的编辑/历史/新建子页链接（映射结果必须是仓库相对路径）。
+- 检查禁用/阻断 JavaScript 时的 Landing 内容、指标格式、弹窗与快捷键、复制回退、Draw.io 操作与窄屏编号公式。
+- 对图表端点与资源 alt 元数据跑 `--panicOnWarning` 构建；非法值现在告警并安全回退，要有意禁用 PlantUML/Draw.io 端点就用 `false` 或空字符串。
+- 出版或转换内容时使用修订后的 PDF 与迁移工具（PDF 默认只允许本地 origin 与 data URL 媒体、禁用脚本，`--allow-remote-resources` 可放宽被动媒体；替换已有输出仍需 `--force`）。
+
+## 批量升级消费站 {#updating-consumers}
+
+随 1.2.0 发布的 `bin/update-consumers.py`（在主题 checkout 中运行）扫描指定根目录下的直属站点，清点并升级它们固定的模块版本：
+
+```bash
+python3 bin/update-consumers.py v1.2.0 --roots ~/www ~/pgsty            # 只读清点
+python3 bin/update-consumers.py v1.2.0 --roots ~/www ~/pgsty --write --check   # 更新 go.mod/go.sum 并跑零告警构建
+```
+
+更新 `go.mod`/`go.sum` 的 OINK 条目、核对精确模块解析图、对每个选中站点跑警告即失败的构建；执行时禁用 `GOWORK`、Hugo 模块 workspace 与模块替换。更新失败会恢复模块文件；构建失败保留新版本以便排查，并返回失败状态。链接 worktree、隐藏副本与非默认分支会跳过（用 `--sites <path>...` 显式选择已核对目录）；`go.mod` 的 OINK 替换需手工处理，vendor 刷新需显式开启。工具不提交、推送或部署；所有跳过与阻塞条目都要人工复核。
 
 ## 内容迁移工具 {#migration-toolkit}
 
@@ -415,7 +439,7 @@ OINK 是 Docsy 的硬分支：内容模型、`td-` 命名、Sass 变量、大部
 1. 固定目标版本（`go.mod` 换 OINK 发布标签，或完整版本化归档；评估期可用不提交的 `go.work`）。
 2. 清点覆盖项：把 `layouts/`、`assets/`、`static/` 下每个站点级文件归成四类——公共外壳副本（验证后删）、OINK 已提供的组件（删或机械重命名）、品牌定制（保留缩到最小 hook）、业务专属数据与交互（留站点）。按引用关系删，不要清空 `layouts/`。
 3. 搬配置：`title`、`languages.*`、`github_repo`、`github_branch`、`page_width`、`params.ui.*` 留在原语义位置。Docsy 驼峰检索键已改名，一律改下划线：`offlineSearch`、`offlineSearchIndex`、`offlineSearchMaxResults`、`offlineSearchOnServe`、`offlineSearchSummaryLength`（旧键只是没人读的键，检索会静默保持关闭）。
-4. 字体与样式的兼容点：`assets/scss/_variables_project.scss` 里 Docsy Sass 变量仍生效，作为字体角色种子值——`$td-fonts-serif`、`$font-family-sans-serif`、`$headings-font-family`、`$font-family-code` 各喂对应角色；`$td-enable-google-fonts`、`$td-google-font-name`、`$td-web-font-path` 主题已不读取，留着不影响构建也不产生效果；OINK 自带 Inter、Chakra Petch、IBM Plex Mono，任何预设都不向 Google Fonts 发请求。想换字体走 token 层。
+4. 字体与样式的兼容点：`assets/scss/_variables_project.scss` 里 Docsy Sass 变量仍生效，作为字体角色种子值——`$td-fonts-serif`、`$font-family-sans-serif`、`$headings-font-family`、`$font-family-code` 各喂对应角色；`$td-enable-google-fonts`、`$td-google-font-name`、`$td-web-font-path` 主题已不读取，留着不影响构建也不产生效果；OINK 自带 Inter、IBM Plex Sans、Chakra Petch、IBM Plex Mono，任何预设都不向 Google Fonts 发请求。想换字体走 token 层。
 5. 换 shortcode：Docsy 的 `alert`、`pageinfo`、`tabpane`、`card` 系列都有当前形态，用迁移工具批量转，`--only` 一类一类来。
 6. 一次删一组、每组构建一次。在临时副本演练并记录主题 commit、Hugo 版本、删了哪些文件、产出多少 HTML，确认等价后再在生产分支重做。
 
@@ -495,6 +519,7 @@ hugo --gc --minify --printPathWarnings --panicOnWarning --logLevel info
 | `invalid params.ui.page_width "widee" (allowed: normal \| wide \| full) -- using "normal"` | 配置或 front matter 取值不在允许集合 | 配置类错误降级不中断；消息带键名、收到的值与回退值。加 `--panicOnWarning` 就上不了线 |
 | 某页设置不生效也无提示 | 键写在了 front matter 的 `ui:` 段里 | 页面键写在 front matter 顶层，键名是站点键去掉 `ui.`；写进 `ui:` 段没人读也没人报错 |
 | 构建通过但线上少东西 | 有 WARNING 没人看 | 构建命令加 `--panicOnWarning`。非法取值、giscus 必填键缺失、不支持的 `comments.type`、弃用提示都只是告警 |
+| 升级到 1.2 后整站外观变了 | 1.2 把默认预设从 Slate 改为 Paper | 需要旧外观设 `params.ui.preset: slate`；给读者切换加 `params.ui.preset_menu: true`。预设**只能站点级设置**，不能按页/栏目覆盖；只写 `[data-bs-theme='dark']` 的旧深色规则可能被 Paper 深色色板盖过 |
 
 三项 goldmark 配置：
 
@@ -529,7 +554,7 @@ ERROR error building site: assemble: failed to create page from pageMetaSource /
 | 语言切换跳到首页 | Hugo 没找到对应译文 | 设计行为：找不到译文就回退到目标语言首页。要跳到对应页面需译文文件确实存在 |
 | 锚点链接打开页面却不定位 | 译文标题文字不同，自动生成的 ID 也不同 | 在译文标题上显式写英文 ID：`## 安装 {#installation}`。标题含 shortcode 或行内 HTML 时不要凭文本猜 ID |
 | 菜单 / 首页分区没翻译 | 这些不在页面里，在配置与数据文件里 | 菜单在 `languages.<lang>.menus`，首页分区在 `data/home/<lang>.yaml`，界面字符串在 `i18n/<lang>.yaml` |
-| 中文页 `hreflang` 指向英文首页 | 该页没有英文对等文件 | 补上英文页，或接受回退：它同时是「Hugo 有没有认出译文关系」的探针 |
+| `hreflang` / `og:locale:alternate` 指向另一语言首页 | 1.1 行为或站点复制的旧 SEO partial | 1.2 起 SEO 备用链接只列真实译文，语言切换器仍保留首页回退。核对实际解析的主题版本并移除复制的旧 SEO partial；该页确实缺译文就补上 |
 
 ## 搜索 {#search}
 
